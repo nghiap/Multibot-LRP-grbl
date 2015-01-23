@@ -38,7 +38,6 @@
 #include "probe.h"
 #include "report.h"
 
-
 // Declare system global variable structure
 system_t sys; 
 

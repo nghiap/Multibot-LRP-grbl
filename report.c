@@ -186,8 +186,10 @@ void report_grbl_settings() {
   printPgmString(PSTR(" (homing feed, mm/min)\r\n$25=")); printFloat_SettingValue(settings.homing_seek_rate);
   printPgmString(PSTR(" (homing seek, mm/min)\r\n$26=")); print_uint8_base10(settings.homing_debounce_delay);
   printPgmString(PSTR(" (homing debounce, msec)\r\n$27=")); printFloat_SettingValue(settings.homing_pulloff);
-  printPgmString(PSTR(" (homing pull-off, mm)\r\n"));
+  printPgmString(PSTR(" (homing pull-off, mm)\r\n$40=")); print_uint8_base10(bit_istrue(settings.flags,BITFLAG_LASER));
+  printPgmString(PSTR(" (turn Laser mode on, bool)\r\n")); 
 
+  
   // Print axis settings
   uint8_t idx, set_idx;
   uint8_t val = AXIS_SETTINGS_START_VAL;

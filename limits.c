@@ -180,9 +180,9 @@ void limits_go_home(uint8_t cycle_mask)
     uint8_t limit_state;
     
     #ifdef USE_LINE_NUMBERS
-      plan_buffer_line(target, homing_rate, false, HOMING_CYCLE_LINE_NUMBER); // Bypass mc_line(). Directly plan homing motion.
+      plan_buffer_line(target, homing_rate, false, 0, 0, HOMING_CYCLE_LINE_NUMBER); // Bypass mc_line(). Directly plan homing motion.
     #else
-      plan_buffer_line(target, homing_rate, false); // Bypass mc_line(). Directly plan homing motion.
+      plan_buffer_line(target, homing_rate, false, 0, 0); // Bypass mc_line(). Directly plan homing motion.
     #endif
     
     st_prep_buffer(); // Prep and fill segment buffer from newly planned block.
@@ -247,9 +247,9 @@ void limits_go_home(uint8_t cycle_mask)
   plan_sync_position(); // Sync planner position to current machine position for pull-off move.
   
   #ifdef USE_LINE_NUMBERS
-    plan_buffer_line(target, settings.homing_seek_rate, false, HOMING_CYCLE_LINE_NUMBER); // Bypass mc_line(). Directly plan motion.
+    plan_buffer_line(target, settings.homing_seek_rate, false, 0, 0, HOMING_CYCLE_LINE_NUMBER); // Bypass mc_line(). Directly plan motion.
   #else
-    plan_buffer_line(target, settings.homing_seek_rate, false); // Bypass mc_line(). Directly plan motion.
+    plan_buffer_line(target, settings.homing_seek_rate, false, 0, 0); // Bypass mc_line(). Directly plan motion.
   #endif
   
   // Initiate pull-off using main motion control routines. 

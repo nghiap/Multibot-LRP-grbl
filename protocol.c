@@ -53,7 +53,7 @@ static void protocol_execute_line(char *line)
   } else if (line[0] == '$') {
     // Grbl '$' system command
     report_status_message(system_execute_line(line));
-    
+
   } else if (sys.state == STATE_ALARM) {
     // Everything else is gcode. Block if in alarm mode.
     report_status_message(STATUS_ALARM_LOCK);
@@ -73,7 +73,7 @@ void protocol_main_loop()
   // ------------------------------------------------------------
   // Complete initialization procedures upon a power-up or reset.
   // ------------------------------------------------------------
-  
+
   // Print welcome message   
   report_init_message();
 

@@ -88,7 +88,7 @@ static uint8_t gc_check_same_position(float *pos_a, float *pos_b)
 // exported to grbl's internal functions in terms of (mm, mm/min) and absolute machine 
 // coordinates, respectively.
 uint8_t gc_execute_line(char *line) 
-{
+ {
   /* -------------------------------------------------------------------------------------
      STEP 1: Initialize parser block struct and copy current g-code state modes. The parser
      updates these modes and commands as the block line is parser and will only be used and
@@ -127,12 +127,11 @@ uint8_t gc_execute_line(char *line)
 
 
   while (line[char_counter] != 0) { // Loop until no more g-code words in line.
-    
     // Import the next g-code word, expecting a letter followed by a value. Otherwise, error out.
     letter = line[char_counter];
     if((letter < 'A') || (letter > 'Z')) { FAIL(STATUS_EXPECTED_COMMAND_LETTER); } // [Expected word letter]
     char_counter++;
-    if (!read_float(line, &char_counter, &value)) { FAIL(STATUS_BAD_NUMBER_FORMAT); } // [Expected word value]
+	if (!read_float(line, &char_counter, &value)) { FAIL(STATUS_BAD_NUMBER_FORMAT); } // [Expected word value]
 
     // Convert values to smaller uint8 significand and mantissa values for parsing this word.
     // NOTE: Mantissa is multiplied by 100 to catch non-integer command values. This is more 
@@ -839,8 +838,11 @@ uint8_t gc_execute_line(char *line)
   if (gc_state.spindle_speed != gc_block.values.s) { 
     gc_state.spindle_speed = gc_block.values.s; 
     
-    // Update running spindle only if not in check mode and not already enabled.
-    if (gc_state.modal.spindle != SPINDLE_DISABLE) { spindle_run(gc_state.modal.spindle, gc_state.spindle_speed); }
+    //S value changes needs to work without planer block too. If there is motion
+    //it will update in real time. However if there is not we need to take care.
+    if (!((gc_block.modal.motion == MOTION_MODE_LINEAR) || (gc_block.modal.motion == MOTION_MODE_CW_ARC) || (gc_block.modal.motion == MOTION_MODE_CCW_ARC))) { 
+		spindle_run(gc_state.modal.spindle, gc_state.spindle_speed);
+	}
   }
     
   // [5. Select tool ]: NOT SUPPORTED. Only tracks tool value.
@@ -912,15 +914,15 @@ uint8_t gc_execute_line(char *line)
       // and absolute and incremental modes.
       if (axis_command) {
         #ifdef USE_LINE_NUMBERS
-          mc_line(gc_block.values.xyz, -1.0, false, gc_block.values.n);
+          mc_line(gc_block.values.xyz, -1.0, false, 0, SPINDLE_DISABLE, gc_block.values.n);
         #else
-          mc_line(gc_block.values.xyz, -1.0, false);
+          mc_line(gc_block.values.xyz, -1.0, false, 0, SPINDLE_DISABLE);
         #endif
       }
       #ifdef USE_LINE_NUMBERS
-        mc_line(parameter_data, -1.0, false, gc_block.values.n); 
+        mc_line(parameter_data, -1.0, false, 0, SPINDLE_DISABLE, gc_block.values.n); 
       #else
-        mc_line(parameter_data, -1.0, false); 
+        mc_line(parameter_data, -1.0, false, 0, SPINDLE_DISABLE); 
       #endif
       memcpy(gc_state.position, parameter_data, sizeof(parameter_data));
       break;
@@ -948,25 +950,25 @@ uint8_t gc_execute_line(char *line)
       switch (gc_state.modal.motion) {
         case MOTION_MODE_SEEK:
           #ifdef USE_LINE_NUMBERS
-            mc_line(gc_block.values.xyz, -1.0, false, gc_block.values.n);
+            mc_line(gc_block.values.xyz, -1.0, false, 0, SPINDLE_DISABLE, gc_block.values.n);
           #else
-            mc_line(gc_block.values.xyz, -1.0, false);
+            mc_line(gc_block.values.xyz, -1.0, false, 0, SPINDLE_DISABLE);
           #endif
           break;
         case MOTION_MODE_LINEAR:
           #ifdef USE_LINE_NUMBERS
-            mc_line(gc_block.values.xyz, gc_state.feed_rate, gc_state.modal.feed_rate, gc_block.values.n);
+            mc_line(gc_block.values.xyz, gc_state.feed_rate, gc_state.modal.feed_rate, calculate_pwm_from_rpm(gc_state.spindle_speed), gc_state.modal.spindle, gc_block.values.n);
           #else
-            mc_line(gc_block.values.xyz, gc_state.feed_rate, gc_state.modal.feed_rate);
+            mc_line(gc_block.values.xyz, gc_state.feed_rate, gc_state.modal.feed_rate, calculate_pwm_from_rpm(gc_state.spindle_speed), gc_state.modal.spindle);
           #endif
           break;
         case MOTION_MODE_CW_ARC: case MOTION_MODE_CCW_ARC:
           #ifdef USE_LINE_NUMBERS
             mc_arc(gc_state.position, gc_block.values.xyz, gc_block.values.ijk, gc_block.values.r, 
-              gc_state.feed_rate, gc_state.modal.feed_rate, axis_0, axis_1, axis_linear, gc_block.values.n);  
+              gc_state.feed_rate, gc_state.modal.feed_rate, axis_0, axis_1, axis_linear, calculate_pwm_from_rpm(gc_state.spindle_speed), gc_state.modal.spindle, gc_block.values.n);  
           #else
             mc_arc(gc_state.position, gc_block.values.xyz, gc_block.values.ijk, gc_block.values.r, 
-              gc_state.feed_rate, gc_state.modal.feed_rate, axis_0, axis_1, axis_linear); 
+              gc_state.feed_rate, gc_state.modal.feed_rate, axis_0, axis_1, axis_linear, calculate_pwm_from_rpm(gc_state.spindle_speed), gc_state.modal.spindle); 
           #endif
           break;
         case MOTION_MODE_PROBE:

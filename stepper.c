@@ -65,6 +65,8 @@ typedef struct {
   uint8_t direction_bits;
   uint32_t steps[N_AXIS];
   uint32_t step_event_count;
+  uint8_t spindle_speed_pwm;
+  uint8_t spindle_direction;
 } st_block_t;
 static st_block_t st_block_buffer[SEGMENT_BUFFER_SIZE-1];
 
@@ -293,6 +295,13 @@ ISR(TIMER1_COMPA_vect)
 // SPINDLE_ENABLE_PORT ^= 1<<SPINDLE_ENABLE_BIT; // Debug: Used to time ISR
   if (busy) { return; } // The busy-flag is used to avoid reentering this interrupt
   
+	//set spindle rpm on new block
+		if (bit_istrue(settings.flags,BITFLAG_LASER)){
+			if ((st.exec_block->spindle_direction != 0) && (OCR_REGISTER != st.exec_block->spindle_speed_pwm)) {
+				OCR_REGISTER = st.exec_block->spindle_speed_pwm;
+	        }
+        }
+  
   // Set the direction pins a couple of nanoseconds before we step the steppers
   DIRECTION_PORT = (DIRECTION_PORT & ~DIRECTION_MASK) | (st.dir_outbits & DIRECTION_MASK);
 
@@ -336,7 +345,7 @@ ISR(TIMER1_COMPA_vect)
         // Initialize Bresenham line and distance counters
         st.counter_x = (st.exec_block->step_event_count >> 1);
         st.counter_y = st.counter_x;
-        st.counter_z = st.counter_x;        
+        st.counter_z = st.counter_x;       
       }
 
       st.dir_outbits = st.exec_block->direction_bits ^ dir_port_invert_mask; 
@@ -569,6 +578,9 @@ void st_prep_buffer()
           st_prep_block->step_event_count = pl_block->step_event_count << MAX_AMASS_LEVEL;
         #endif
         
+        //Laser spindle
+          st_prep_block->spindle_direction = pl_block->spindle_direction;
+          st_prep_block->spindle_speed_pwm = pl_block->spindle_speed;
         // Initialize segment buffer data for generating the segments.
         prep.steps_remaining = pl_block->step_event_count;
         prep.step_per_mm = prep.steps_remaining/pl_block->millimeters;

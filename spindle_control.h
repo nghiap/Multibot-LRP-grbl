@@ -37,4 +37,7 @@ void spindle_run(uint8_t direction, float rpm);
 // Kills spindle.
 void spindle_stop();
 
+//Calculate PWM from RPM
+uint8_t calculate_pwm_from_rpm(float rpm);
+
 #endif
